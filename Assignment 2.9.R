@@ -14,7 +14,7 @@ library(magrittr)
 #Load the data
 births <- read.csv(file = "data/births.csv")
 head(births)
-
+colnames(births)
 #(a)Recode the variable 'child_birth' to new variable 'home'
 births <- births %>%
   rename(home = child_birth) %>%
@@ -32,7 +32,7 @@ table(births$etnicity)
 births <- births %>%
   rename(etni = etnicity) %>%
   mutate(etni = factor(ifelse(etni == "Dutch", "Dutch", "Not_Dutch")))
-table(births$etni)
+table(table(births$etni), col.names = c("etnicity", "frequency"))
 
 #(d)Make a logistic regression model
 births_glm <- glm(home == "at_home" ~ pari + age_cat + etni + urban,
@@ -42,29 +42,46 @@ summary(births_glm)
 
 #(e)Make a decision tree
 births_tree <- rpart(home ~ pari + age_cat + etni + urban,
-                     method = 'class', data = births)
+                     method = 'class',
+                     data = births)
 rpart.plot(births_tree)
 #(f) Compare logistic regression moderl and decision tree model, assess which is better
 
 #Split data into training and test sets
 set.seed(100)
 mydat <- births
-trainRowNumbers <- createDataPartition(mydat$home, p=0.8, list=FALSE)
-trainData <- mydat[trainRowNumbers,]
-testData <- mydat[-trainRowNumbers,]
+trainRowNumbers <-
+  createDataPartition(mydat$home, p = 0.8, list = FALSE)
+trainData <- mydat[trainRowNumbers, ]
+testData <- mydat[-trainRowNumbers, ]
 #Fit the training data to logictic regression model
-fit_logreg <- train(home ~ pari + age_cat + etni + urban, data = trainData,
-                    method="glm", family="binomial")
+fit_logreg <-
+  train(
+    home ~ pari + age_cat + etni + urban,
+    data = trainData,
+    method = "glm",
+    family = "binomial"
+  )
 #Calculate accuracy of logictic regression model
 predicted_logistic <- predict(fit_logreg, testData)
-confusionMatrix(reference = testData$home, data = predicted_logistic,
-                mode='everything', positive='at_home')
+confusionMatrix(
+  reference = testData$home,
+  data = predicted_logistic,
+  mode = 'everything',
+  positive = 'at_home'
+)
 
-
+set.seed(2)
 #Fit the training data to decision tree model
-fit_rpart <- train(home ~ pari + age_cat + etni + urban, data = trainData,
-                   method="rpart")
+fit_rpart <-
+  train(home ~ pari + age_cat + etni + urban,
+        data = trainData,
+        method = "rpart")
 #Calculate accuracy of decision tree model
 predicted_tree <- predict(fit_rpart, testData)
-confusionMatrix(reference = testData$home, data = predicted_tree,
-                mode='everything', positive='at_home')
+confusionMatrix(
+  reference = testData$home,
+  data = predicted_tree,
+  mode = 'everything',
+  positive = 'at_home'
+)
